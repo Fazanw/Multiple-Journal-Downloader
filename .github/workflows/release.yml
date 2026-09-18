@@ -1,0 +1,54 @@
+name: Automated Release Build
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers the workflow automatically whenever you push a tag like v1.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Build Application (PyInstaller)
+        run: |
+          python build_multi_os.py
+
+      - name: Compile Windows Installer (Inno Setup)
+        run: |
+          # The windows-latest runner comes with Inno Setup pre-installed!
+          # We just need to compile the .iss script to generate the Setup.exe wizard
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - name: Rename Installer with Version Tag
+        run: |
+          # Rename Multi_Reference_Downloader_Setup.exe to Multi_Reference_Downloader_Setup_v1.1.0.exe
+          $TAG = $env:GITHUB_REF_NAME
+          Rename-Item -Path "installer_build\Multi_Reference_Downloader_Setup.exe" -NewName "Multi_Reference_Downloader_Setup_$TAG.exe"
+
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer_build/Multi_Reference_Downloader_Setup_*.exe
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
