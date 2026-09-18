@@ -1,0 +1,22 @@
+TERMS AND CONDITIONS & END USER LICENSE AGREEMENT (EULA)
+
+1. ACCEPTANCE OF TERMS
+By installing and using the RIS Downloader (the "Application"), you agree to be bound by these terms. If you do not agree to these terms, do not install or use the Application.
+
+2. PURPOSE OF APPLICATION
+The Application is designed strictly as a bulk-processing utility to retrieve legally available Open Access academic papers via authorized public APIs (Unpaywall, Crossref, Europe PMC, OpenAlex, Semantic Scholar). 
+
+3. DISCLAIMER OF DEFICIENCIES AND LIMITATIONS
+Please read the following limitations carefully:
+- PAYWALL LIMITATION: This Application DOES NOT and CANNOT bypass publisher paywalls or digital rights management (DRM) protections. If an article is not legally distributed as Open Access, the Application will mark it as "Manual Access Required" and will not download it.
+- API DEPENDENCY: The Application is 100% dependent on third-party APIs. If these services experience downtime, rate limiting, or alter their access policies, the Application's ability to download papers may be degraded or broken entirely.
+- DATA ACCURACY: The Application relies on metadata (DOIs) provided in your uploaded files. Incorrect or badly formatted references will result in failed downloads.
+
+4. "AS IS" CONDITION
+The Application is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. 
+
+5. FAIR USE AND RATE LIMITING
+You agree to use this Application responsibly. The Application employs exponential backoff to respect the rate limits of the public APIs it queries. You agree not to modify the code to spam or launch denial-of-service (DoS) attacks against these public databases.
+
+6. LIMITATION OF LIABILITY
+In no event shall the developers or copyright holders be liable for any claim, damages, or other liability arising from, out of, or in connection with the software or the use or other dealings in the software.
