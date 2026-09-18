@@ -1,7 +1,7 @@
 [Setup]
 ; App Information
 AppName=Multi Reference Downloader
-AppVersion=1.0
+AppVersion=1.1.0
 AppPublisher=Academic Open Access Tools
 AppPublisherURL=https://github.com/
 AppSupportURL=https://github.com/
