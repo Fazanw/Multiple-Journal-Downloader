@@ -35,8 +35,8 @@ jobs:
       - name: Compile Windows Installer (Inno Setup)
         run: |
           # The windows-latest runner comes with Inno Setup pre-installed!
-          # We just need to compile the .iss script to generate the Setup.exe wizard
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          # We use the '&' call operator in PowerShell to execute a path with spaces
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Rename Installer with Version Tag
         run: |
