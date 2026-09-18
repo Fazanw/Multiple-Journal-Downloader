@@ -107,7 +107,71 @@ class UnpaywallDownloader:
                 if files:
                     links = files[0].get('links', {})
                     if links.get('self'): return links.get('self')
+                    
+        # 9. Fallback to arXiv (Physics, Math, CS preprints)
+        arxiv_url = f"http://export.arxiv.org/api/query?search_query=doi:{doi}"
+        text_data = await self._get_with_retry(session, arxiv_url, as_json=False)
+        if text_data and "<link title=\"pdf\"" in text_data:
+            match = re.search(r'<link title="pdf"\s+href="([^"]+)"', text_data)
+            if match:
+                return match.group(1) + ".pdf"
+
+        # 10. Fallback to bioRxiv (Biology preprints)
+        biorxiv_url = f"https://api.biorxiv.org/details/biorxiv/{doi}"
+        data = await self._get_with_retry(session, biorxiv_url)
+        if data and isinstance(data, dict):
+            msgs = data.get("messages", [])
+            if msgs and msgs[0].get("status") == "ok":
+                collection = data.get("collection", [])
+                if collection:
+                    return f"https://www.biorxiv.org/content/{doi}v{collection[-1].get('version')}.full.pdf"
+
+        # 11. Fallback to medRxiv (Medical preprints)
+        medrxiv_url = f"https://api.biorxiv.org/details/medrxiv/{doi}"
+        data = await self._get_with_retry(session, medrxiv_url)
+        if data and isinstance(data, dict):
+            msgs = data.get("messages", [])
+            if msgs and msgs[0].get("status") == "ok":
+                collection = data.get("collection", [])
+                if collection:
+                    return f"https://www.medrxiv.org/content/{doi}v{collection[-1].get('version')}.full.pdf"
             
+        return None
+
+    async def fetch_pdf_url_by_title(self, session, title):
+        if not title or len(title) < 5 or self.cancel_event.is_set(): return None
+        encoded_title = urllib.parse.quote(title)
+        
+        # 1. Semantic Scholar Title Search
+        ss_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={encoded_title}&fields=openAccessPdf,externalIds&limit=3"
+        data = await self._get_with_retry(session, ss_url)
+        if data and isinstance(data, dict):
+            for paper in data.get('data', []):
+                oa = paper.get('openAccessPdf')
+                if oa and oa.get('url'):
+                    return oa.get('url')
+                ext_ids = paper.get('externalIds', {})
+                if ext_ids and ext_ids.get('DOI'):
+                    pdf = await self.fetch_pdf_url(session, ext_ids.get('DOI'))
+                    if pdf: return pdf
+
+        # 2. Crossref Title Search
+        cr_url = f"https://api.crossref.org/works?query.title={encoded_title}&select=DOI,link,title&rows=3"
+        data = await self._get_with_retry(session, cr_url)
+        if data and isinstance(data, dict):
+            items = data.get('message', {}).get('items', [])
+            for item in items:
+                item_title = item.get('title', [''])[0].lower()
+                # Basic sanity check
+                if len(item_title) > 5 and item_title[:10] in title.lower():
+                    links = item.get('link', [])
+                    for link in links:
+                        if link.get('content-type') == 'application/pdf':
+                            return link.get('URL')
+                    if item.get('DOI'):
+                        pdf = await self.fetch_pdf_url(session, item.get('DOI'))
+                        if pdf: return pdf
+                        
         return None
 
     def sanitize_filename(self, title):
@@ -165,13 +229,10 @@ class UnpaywallDownloader:
             return
 
         doi = ref.get("doi")
-        if not doi:
-            ref["status"] = "No DOI"
-            if callback: callback(ref)
-            return
-            
+        title = ref.get("title", "")
+        
         # Check if file already exists in the destination folder
-        filename = self.sanitize_filename(ref.get("title", "Unknown Title"))
+        filename = self.sanitize_filename(title if title else (doi if doi else "Unknown Title"))
         filepath = os.path.join(out_dir, filename)
         if os.path.exists(filepath):
             ref["status"] = "Downloaded"
@@ -180,9 +241,16 @@ class UnpaywallDownloader:
             
         await asyncio.sleep(0.1)
         
-        pdf_url = await self.fetch_pdf_url(session, doi)
+        pdf_url = None
+        if doi:
+            pdf_url = await self.fetch_pdf_url(session, doi)
+            
+        # Title search fallback
+        if not pdf_url and title and len(title) > 5 and "Extracted Document" not in title:
+            pdf_url = await self.fetch_pdf_url_by_title(session, title)
+            
         if pdf_url:
-            success = await self.download_pdf(session, pdf_url, ref["title"], out_dir)
+            success = await self.download_pdf(session, pdf_url, title if title else (doi if doi else "Unknown Title"), out_dir)
             if self.cancel_event.is_set(): return
             ref["status"] = "Downloaded" if success else "Failed to Download"
         else:

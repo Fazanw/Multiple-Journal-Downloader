@@ -7,8 +7,8 @@ from tkinter import messagebox
 APP_VERSION = "1.0.0"
 # Using GitHub Releases API as the update server
 # Assuming the user will host the code at their github profile
-GITHUB_API_URL = "https://api.github.com/repos/fazanw/Multi-Reference-Downloader/releases/latest"
-DOWNLOAD_URL = "https://github.com/fazanw/Multi-Reference-Downloader/releases/latest"
+GITHUB_API_URL = "https://api.github.com/repos/Fazanw/Multiple-Journal-Downloader/releases/latest"
+DOWNLOAD_URL = "https://github.com/Fazanw/Multiple-Journal-Downloader/releases/latest"
 
 def check_for_updates(app_window):
     """

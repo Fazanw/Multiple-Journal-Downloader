@@ -26,7 +26,7 @@ Instead of manually searching for hundreds of DOIs one by one, simply drop in yo
 
 ## 📥 Installation
 
-1. Go to the [Releases](https://github.com/fazanw/Multi-Reference-Downloader/releases/latest) page.
+1. Go to the [Releases](https://github.com/fazanw/Multiple-Journal-Downloader/releases/latest) page.
 2. Download the latest `Multi_Reference_Downloader_Setup.exe` installer file.
 3. Double-click the installer and follow the on-screen prompts.
 4. Launch the application from your Desktop or Start Menu.
@@ -51,7 +51,7 @@ This application strictly downloads **Open Access** papers that have been legall
 
 ## 📝 Changelog & Release Notes
 
-To see the full history of enhancements, bug fixes, and what has been built in each version of the app, please visit the [Releases Page](https://github.com/fazanw/Multi-Reference-Downloader/releases).
+To see the full history of enhancements, bug fixes, and what has been built in each version of the app, please visit the [Releases Page](https://github.com/fazanw/Multiple-Journal-Downloader/releases).
 
 ## 👨‍💻 Developer
 
