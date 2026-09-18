@@ -11,14 +11,14 @@ class UnpaywallDownloader:
         self.api_base = "https://api.unpaywall.org/v2/"
         self.cancel_event = asyncio.Event()
 
-    async def _get_with_retry(self, session, url, retries=3):
+    async def _get_with_retry(self, session, url, retries=3, as_json=True):
         for attempt in range(retries):
             if self.cancel_event.is_set():
                 return None
             try:
                 async with session.get(url, timeout=15) as response:
                     if response.status == 200:
-                        return await response.json()
+                        return await response.json() if as_json else await response.text()
                     elif response.status in (429, 500, 502, 503, 504):
                         # Retry on rate limit or server error
                         await asyncio.sleep(2 ** attempt)

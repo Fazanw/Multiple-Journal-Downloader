@@ -49,6 +49,10 @@ This application strictly downloads **Open Access** papers that have been legall
 - It **does not** interact with shadow libraries (e.g., Sci-Hub).
 - It relies entirely on public APIs. If a paper is strictly paywalled and no legal open-access copy exists anywhere on the internet, the application will skip it and mark it as "Manual Access Required".
 
+## 📝 Changelog & Release Notes
+
+To see the full history of enhancements, bug fixes, and what has been built in each version of the app, please visit the [Releases Page](https://github.com/fazanw/Multi-Reference-Downloader/releases).
+
 ## 👨‍💻 Developer
 
-Built by [Faza](https://github.com/fazanw).
+Built by [Faza](https://www.linkedin.com/in/fazanurw/).
