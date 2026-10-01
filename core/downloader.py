@@ -12,6 +12,7 @@ class UnpaywallDownloader:
         self.cancel_event = asyncio.Event()
 
     async def _get_with_retry(self, session, url, retries=3, as_json=True):
+        import random
         for attempt in range(retries):
             if self.cancel_event.is_set():
                 return None
@@ -20,8 +21,9 @@ class UnpaywallDownloader:
                     if response.status == 200:
                         return await response.json() if as_json else await response.text()
                     elif response.status in (429, 500, 502, 503, 504):
-                        # Retry on rate limit or server error
-                        await asyncio.sleep(2 ** attempt)
+                        # Smart Jittered Backoff to prevent thundering herd
+                        jitter = random.uniform(0.5, 1.5)
+                        await asyncio.sleep((2 ** attempt) + jitter)
                         continue
                     else:
                         return None
@@ -135,6 +137,32 @@ class UnpaywallDownloader:
                 collection = data.get("collection", [])
                 if collection:
                     return f"https://www.medrxiv.org/content/{doi}v{collection[-1].get('version')}.full.pdf"
+        # 12. Fallback to PubMed Central (US) Direct API
+        pmc_search = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pmc&term={doi}[doi]&retmode=json"
+        pmc_data = await self._get_with_retry(session, pmc_search)
+        if pmc_data and isinstance(pmc_data, dict):
+            idlist = pmc_data.get("esearchresult", {}).get("idlist", [])
+            if idlist:
+                return f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{idlist[0]}/pdf/"
+
+        # 13. Fallback to DOAJ (Directory of Open Access Journals)
+        doaj_url = f"https://doaj.org/api/v1/search/articles/doi:{doi}"
+        doaj_data = await self._get_with_retry(session, doaj_url)
+        if doaj_data and isinstance(doaj_data, dict):
+            results = doaj_data.get("results", [])
+            if results:
+                link = results[0].get("bibjson", {}).get("link", [])
+                for l in link:
+                    if l.get("type") == "fulltext" and l.get("url", "").endswith(".pdf"):
+                        return l.get("url")
+
+        # 14. Fallback to OpenAIRE
+        openaire_url = f"https://api.openaire.eu/search/publications?doi={doi}&format=json"
+        oa_data = await self._get_with_retry(session, openaire_url, as_json=False)
+        if oa_data:
+            match = re.search(r'(https?://[^\s"\'\{\}]+\.pdf)', oa_data)
+            if match:
+                return match.group(1)
             
         return None
 
@@ -261,9 +289,13 @@ class UnpaywallDownloader:
             
     async def batch_download(self, references, out_dir, callback=None):
         self.cancel_event.clear()
-        connector = aiohttp.TCPConnector(limit_per_host=5, limit=20)
+        
+        # High-Performance Connection Pooling (15 concurrent connections per API domain, 60 overall)
+        connector = aiohttp.TCPConnector(limit_per_host=15, limit=60)
+        
+        # Open Access "Polite Pool" standard User-Agent (crucial for Crossref, Unpaywall, OpenAlex APIs)
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'MultiReferenceDownloader/1.1.0 (mailto:researcher@openscience.org) aiohttp/3.9.3'
         }
         
         # Concurrency limit to prevent memory/loop flooding
